@@ -1,0 +1,58 @@
+#!/bin/bash
+PLUGIN="smsups"
+NAME="smsups-bridge"
+DAEMON="/usr/local/bin/smsups-nut-bridge"
+PIDFILE="/var/run/$NAME.pid"
+DIR="/boot/config/plugins/$PLUGIN"
+CFG="$DIR/smsups.cfg"
+
+is_enabled() {
+  [ -f "$CFG" ] && grep -q "^BRIDGE_ENABLED=yes" "$CFG"
+}
+
+bridge_start() {
+  if ! is_enabled; then
+    echo "$NAME is disabled in $CFG"
+    return
+  fi
+  if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+    echo "$NAME is already running"
+    return
+  fi
+  if [ ! -f "$DIR/conf/bridge.yaml" ]; then
+    echo "Config not found: $DIR/conf/bridge.yaml"
+    return
+  fi
+  echo "Starting $NAME..."
+  cd "$DIR" || exit 1
+  nohup $DAEMON -config conf/bridge.yaml > /var/log/$NAME.log 2>&1 &
+  echo $! > "$PIDFILE"
+  echo "$NAME started (pid $(cat $PIDFILE))"
+}
+
+bridge_stop() {
+  if [ -f "$PIDFILE" ]; then
+    echo "Stopping $NAME..."
+    kill "$(cat "$PIDFILE")" 2>/dev/null
+    rm -f "$PIDFILE"
+    echo "$NAME stopped"
+  else
+    echo "$NAME is not running"
+  fi
+}
+
+bridge_status() {
+  if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+    echo "$NAME is running (pid $(cat $PIDFILE))"
+  else
+    echo "$NAME is not running"
+  fi
+}
+
+case "$1" in
+  start)   bridge_start ;;
+  stop)    bridge_stop ;;
+  restart) bridge_stop; sleep 1; bridge_start ;;
+  status)  bridge_status ;;
+  *)       echo "usage: $0 start|stop|restart|status" ;;
+esac
