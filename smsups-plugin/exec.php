@@ -49,7 +49,7 @@ switch ($action) {
     case 'save':
         $cfg_path = ($service === 'bridge') ? $bridge_cfg : $ups_cfg;
         if (!is_dir(dirname($cfg_path))) {
-            mkdir(dirname($cfg_path), 0777, true);
+            mkdir(dirname($cfg_path), 0755, true);
         }
         file_put_contents($cfg_path, $_POST['config'] ?? '');
         $script = $rc[$service] ?? null;
@@ -70,7 +70,7 @@ switch ($action) {
             }
         }
         if (!$found) $lines[] = "$key=$enabled";
-        if (!is_dir($flash_dir)) mkdir($flash_dir, 0777, true);
+        if (!is_dir($flash_dir)) mkdir($flash_dir, 0755, true);
         file_put_contents($cfg_file, implode("\n", $lines) . "\n");
         echo "Auto-start for $service set to $enabled";
         break;
