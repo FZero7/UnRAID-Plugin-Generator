@@ -1,0 +1,11 @@
+source:
+    address: localhost
+    port: 9110
+    interval: 15s
+    timeout: 5s
+
+nut:
+    dev_file: /tmp/smsups.dev
+    ups_name: smsups
+    description: "SMS Brasil UPS"
+    manufacturer: "SMS Brasil"

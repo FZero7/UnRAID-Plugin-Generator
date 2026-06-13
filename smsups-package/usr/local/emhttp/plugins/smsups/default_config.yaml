@@ -1,0 +1,29 @@
+device:
+    address: ""              # IP ou hostname do UPS (OBRIGATÓRIO)
+    interval: 10s
+    log: warn
+    login:
+        username: admin
+        password: ""         # Senha do UPS (OBRIGATÓRIO)
+    http:
+        client:
+            dial_timeout: 5s
+
+logs:
+    # "gelf" ou "victorialogs"
+    type: "victorialogs"
+    victorialogs:
+        address: localhost
+        port: 9428
+        timeout: 30s
+
+metrics:
+    influxdb:
+        enabled: false
+        address: influx
+        database: UPS
+        port: 8086
+    prometheus:
+        enabled: true
+        path: /metrics
+        port: 9110

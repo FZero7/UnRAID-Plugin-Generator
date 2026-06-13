@@ -1,0 +1,159 @@
+Menu="NetworkServices"
+Title="SMS UPS"
+Icon="fa-battery-full"
+---
+<?php
+$plugin    = "smsups";
+$flash_dir = "/boot/config/plugins/$plugin";
+$cfg_file  = "$flash_dir/smsups.cfg";
+$ups_cfg   = "$flash_dir/conf/config.yaml";
+$bridge_cfg= "$flash_dir/conf/bridge.yaml";
+
+$ups_enabled    = false;
+$bridge_enabled = false;
+if (file_exists($cfg_file)) {
+    $cfg_content = file_get_contents($cfg_file);
+    $ups_enabled    = strpos($cfg_content, 'UPS_METRICS_ENABLED=yes') !== false;
+    $bridge_enabled = strpos($cfg_content, 'BRIDGE_ENABLED=yes') !== false;
+}
+
+$ups_config_content    = file_exists($ups_cfg)    ? htmlspecialchars(file_get_contents($ups_cfg))    : "";
+$bridge_config_content = file_exists($bridge_cfg) ? htmlspecialchars(file_get_contents($bridge_cfg)) : "";
+?>
+
+<style>
+.smsups-container { padding: 20px; }
+.smsups-textarea {
+    width: 100%; height: 360px;
+    background: #1e1e1e; color: #d4d4d4;
+    border: 1px solid #444; border-radius: 4px;
+    padding: 10px; font-family: monospace; font-size: 13px;
+    resize: vertical;
+}
+.smsups-btn {
+    background: #0d6efd; color: #fff; border: none;
+    padding: 8px 16px; border-radius: 4px; cursor: pointer;
+    font-size: 13px; margin-right: 6px; margin-top: 8px;
+}
+.smsups-btn:hover { background: #0b5ed7; }
+.smsups-btn.danger { background: #dc3545; }
+.smsups-btn.danger:hover { background: #b02a37; }
+.tab-btn {
+    background: #333; color: #aaa; border: none;
+    padding: 9px 20px; cursor: pointer; border-radius: 4px 4px 0 0;
+    margin-right: 4px; font-weight: bold;
+}
+.tab-btn.active { background: #1e1e1e; color: #4fc3f7; border-bottom: 2px solid #4fc3f7; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.status-bar {
+    background: #1e1e1e; border: 1px solid #333; border-radius: 4px;
+    padding: 10px 16px; margin-bottom: 16px; font-family: monospace;
+}
+.global-actions { margin-bottom: 16px; }
+.autostart-row { margin-bottom: 12px; display: flex; gap: 24px; }
+.autostart-row label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+#output { margin-top: 12px; font-family: monospace; font-size: 13px; color: #4fc3f7; min-height: 20px; }
+</style>
+
+<div class="smsups-container">
+    <h2><i class="fa fa-battery-full"></i> SMS UPS Monitor</h2>
+
+    <div class="status-bar">
+        <span id="status-ups">ups-metrics: <i>checking...</i></span>
+        &nbsp;|&nbsp;
+        <span id="status-bridge">NUT Bridge: <i>checking...</i></span>
+    </div>
+
+    <div class="autostart-row">
+        <label>
+            <input type="checkbox" id="chk-ups" <?= $ups_enabled ? 'checked' : '' ?>
+                onchange="setAutostart('ups-metrics', this.checked)">
+            ups-metrics &mdash; Auto-start on boot
+        </label>
+        <label>
+            <input type="checkbox" id="chk-bridge" <?= $bridge_enabled ? 'checked' : '' ?>
+                onchange="setAutostart('bridge', this.checked)">
+            NUT Bridge &mdash; Auto-start on boot
+        </label>
+    </div>
+
+    <div class="global-actions">
+        <button class="smsups-btn" onclick="allAction('start_all')">&#9654; Start All</button>
+        <button class="smsups-btn danger" onclick="allAction('stop_all')">&#9632; Stop All</button>
+        <button class="smsups-btn" onclick="allAction('restart_all')">&#8635; Restart All</button>
+    </div>
+
+    <div>
+        <button class="tab-btn active" onclick="switchTab('tab-ups', this)">ups-metrics</button>
+        <button class="tab-btn" onclick="switchTab('tab-bridge', this)">NUT Bridge</button>
+    </div>
+
+    <div id="tab-ups" class="tab-content active">
+        <textarea id="cfg-ups" class="smsups-textarea" spellcheck="false"><?= $ups_config_content ?></textarea>
+        <div>
+            <button class="smsups-btn" onclick="saveConfig('ups-metrics', 'cfg-ups')">&#128190; Save &amp; Restart</button>
+            <button class="smsups-btn" onclick="svcAction('ups-metrics', 'start')">&#9654; Start</button>
+            <button class="smsups-btn danger" onclick="svcAction('ups-metrics', 'stop')">&#9632; Stop</button>
+            <button class="smsups-btn" onclick="svcAction('ups-metrics', 'restart')">&#8635; Restart</button>
+        </div>
+    </div>
+
+    <div id="tab-bridge" class="tab-content">
+        <textarea id="cfg-bridge" class="smsups-textarea" spellcheck="false"><?= $bridge_config_content ?></textarea>
+        <div>
+            <button class="smsups-btn" onclick="saveConfig('bridge', 'cfg-bridge')">&#128190; Save &amp; Restart</button>
+            <button class="smsups-btn" onclick="svcAction('bridge', 'start')">&#9654; Start</button>
+            <button class="smsups-btn danger" onclick="svcAction('bridge', 'stop')">&#9632; Stop</button>
+            <button class="smsups-btn" onclick="svcAction('bridge', 'restart')">&#8635; Restart</button>
+        </div>
+    </div>
+
+    <div id="output"></div>
+</div>
+
+<script>
+var api = '/plugins/smsups/php/exec.php';
+
+function switchTab(id, btn) {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+}
+
+function out(msg) {
+    document.getElementById('output').textContent = msg;
+}
+
+function saveConfig(service, textareaId) {
+    var content = document.getElementById(textareaId).value;
+    $.post(api, { action: 'save', service: service, config: content }, out);
+}
+
+function svcAction(service, action) {
+    $.post(api, { action: action, service: service }, out);
+    setTimeout(updateStatus, 1500);
+}
+
+function allAction(action) {
+    $.post(api, { action: action }, out);
+    setTimeout(updateStatus, 1500);
+}
+
+function setAutostart(service, enabled) {
+    $.post(api, { action: 'set_autostart', service: service, enabled: enabled ? 'yes' : 'no' }, out);
+}
+
+function updateStatus() {
+    $.get(api, { action: 'status', service: 'ups-metrics' }, function(d) {
+        document.getElementById('status-ups').innerHTML = 'ups-metrics: <b>' + d + '</b>';
+    });
+    $.get(api, { action: 'status', service: 'bridge' }, function(d) {
+        document.getElementById('status-bridge').innerHTML = 'NUT Bridge: <b>' + d + '</b>';
+    });
+}
+
+updateStatus();
+setInterval(updateStatus, 10000);
+</script>
