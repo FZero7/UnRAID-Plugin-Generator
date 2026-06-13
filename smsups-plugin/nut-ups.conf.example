@@ -1,0 +1,7 @@
+# Add these lines to your /etc/nut/ups.conf (Unraid NUT plugin config).
+# The smsups-bridge keeps /tmp/smsups.dev updated with correct UPS data.
+
+[smsups]
+  driver = dummy-ups
+  port   = /tmp/smsups.dev
+  desc   = "SMS Brasil UPS via smsups-bridge"
