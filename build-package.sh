@@ -13,33 +13,22 @@ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build \
 cd ..
 echo "Bridge binary: OK"
 
-echo "=== Downloading ups-metrics from GitHub releases ==="
-LATEST_TAG=$(curl -s https://api.github.com/repos/alexwbaule/ups-metrics/releases/latest \
-    | grep '"tag_name":' | head -n1 | awk -F '"' '{print $4}')
-
-if [ -z "$LATEST_TAG" ]; then
-    echo "ERROR: Could not fetch latest ups-metrics release tag"
-    exit 1
-fi
-echo "Latest ups-metrics release: $LATEST_TAG"
-
-ASSET_URL=$(curl -s https://api.github.com/repos/alexwbaule/ups-metrics/releases/latest \
-    | grep '"browser_download_url"' \
-    | grep -i 'linux' | grep -i 'amd64' \
-    | awk -F '"' '{print $4}' | head -1)
-
-if [ -z "$ASSET_URL" ]; then
-    echo "ERROR: No linux/amd64 asset found in latest release"
-    echo "Available assets:"
-    curl -s https://api.github.com/repos/alexwbaule/ups-metrics/releases/latest \
-        | grep '"browser_download_url"' | awk -F '"' '{print $4}'
-    exit 1
-fi
-
-echo "Downloading: $ASSET_URL"
-wget -qO "$PKG_DIR/usr/local/bin/ups-metrics" "$ASSET_URL"
+echo "=== Building ups-metrics from source ==="
+# ups-metrics has no release binaries — compile from latest main branch
+UPS_TMP=$(mktemp -d)
+wget -qO "$UPS_TMP/source.tar.gz" \
+    https://github.com/alexwbaule/ups-metrics/archive/refs/heads/main.tar.gz
+mkdir -p "$UPS_TMP/src"
+tar -xzf "$UPS_TMP/source.tar.gz" -C "$UPS_TMP/src" --strip-components=1
+cd "$UPS_TMP/src"
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build \
+    -ldflags="-s -w" \
+    -o "$OLDPWD/$PKG_DIR/usr/local/bin/ups-metrics" \
+    ./cmd/ups-metrics
+cd "$OLDPWD"
+rm -rf "$UPS_TMP"
 chmod +x "$PKG_DIR/usr/local/bin/ups-metrics"
-echo "ups-metrics binary: OK ($LATEST_TAG)"
+echo "ups-metrics binary: OK (latest main)"
 
 echo "=== Copying plugin files ==="
 cp smsups-plugin/smsups.page          "$PKG_DIR/usr/local/emhttp/plugins/$PLUGIN/"
