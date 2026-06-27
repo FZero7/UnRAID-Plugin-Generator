@@ -11,7 +11,7 @@
 <!ENTITY forgejo      "http://192.168.1.108:3030">
 <!ENTITY pluginURL    "&forgejo;/&author;/&repo;/releases/download/&tag;/&name;.plg">
 <!ENTITY packageURL   "&forgejo;/&author;/&repo;/releases/download/&tag;/&name;.txz">
-<!ENTITY version      "2026.06.27.0308">
+<!ENTITY version      "2026.06.27.0311">
 <!ENTITY MD5          "790716f7f5798ac21b7998849d97e71c">
 ]>
 
