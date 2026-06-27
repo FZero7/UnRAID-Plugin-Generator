@@ -10,8 +10,7 @@ device:
             dial_timeout: 5s
 
 logs:
-    # Campo obrigatório — ups-metrics não inicia sem ele.
-    # Os erros de conexão vão para /var/log/ups-metrics.log, não para o syslog.
+    # "gelf" ou "victorialogs"
     type: "victorialogs"
     victorialogs:
         address: localhost

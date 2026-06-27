@@ -3,7 +3,6 @@ source:
     port: 9110
     interval: 15s
     timeout: 5s
-    debug: false    # true → loga cada atualização (útil para diagnóstico)
 
 nut:
     dev_file: /tmp/smsups.dev

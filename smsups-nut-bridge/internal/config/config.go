@@ -18,7 +18,6 @@ type SourceConfig struct {
 	Port     string        `yaml:"port"`
 	Interval time.Duration `yaml:"interval"`
 	Timeout  time.Duration `yaml:"timeout"`
-	Debug    bool          `yaml:"debug"`
 }
 
 type NUTConfig struct {

@@ -65,8 +65,6 @@ func run(ctx context.Context, cfg *config.Config) error {
 	if err := nut.Write(cfg.NUT.DevFile, vars); err != nil {
 		return err
 	}
-	if cfg.Source.Debug {
-		log.Printf("updated %s: status=%s charge=%s%%", cfg.NUT.DevFile, vars["ups.status"], vars["battery.charge"])
-	}
+	log.Printf("updated %s: status=%s charge=%s%%", cfg.NUT.DevFile, vars["ups.status"], vars["battery.charge"])
 	return nil
 }
