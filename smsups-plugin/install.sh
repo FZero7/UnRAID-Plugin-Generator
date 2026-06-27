@@ -21,6 +21,8 @@ if [ ! -f "$FLASH_DIR/smsups.cfg" ]; then
     cat > "$FLASH_DIR/smsups.cfg" <<EOF
 UPS_METRICS_ENABLED=yes
 BRIDGE_ENABLED=yes
+VICTORIALOGS_RETENTION=24h
+VICTORIALOGS_PORT=9428
 EOF
     echo "Default smsups.cfg created"
 fi
@@ -36,6 +38,7 @@ echo "    port = /tmp/smsups.dev"
 echo "    desc = \"SMS Brasil UPS via Bridge\""
 echo ""
 
+/etc/rc.d/rc.victorialogs start
 /etc/rc.d/rc.ups-metrics start
 /etc/rc.d/rc.smsups-bridge start
 

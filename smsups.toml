@@ -14,6 +14,10 @@ packageURL  = "&forgejo;/&author;/&repo;/releases/download/&tag;/&name;.txz"
 
 # RC scripts installed directly — Mode attribute sets file permissions
 [[FILE]]
+Attr = { Name = "/etc/rc.d/rc.victorialogs", Mode = "0755" }
+SCRIPT_RAW = "./smsups-plugin/rc.victorialogs"
+
+[[FILE]]
 Attr = { Name = "/etc/rc.d/rc.ups-metrics", Mode = "0755" }
 SCRIPT_RAW = "./smsups-plugin/rc.ups-metrics"
 

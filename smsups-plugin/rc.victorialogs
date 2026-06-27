@@ -1,0 +1,64 @@
+#!/bin/bash
+PLUGIN="smsups"
+NAME="victorialogs"
+DAEMON="/usr/local/bin/victoria-logs"
+PIDFILE="/var/run/$NAME.pid"
+CFG="/boot/config/plugins/$PLUGIN/smsups.cfg"
+DATADIR="/dev/shm/vlogs-data"   # tmpfs — nunca persiste em disco
+RETENTION="24h"
+PORT="9428"
+
+# Override defaults from smsups.cfg if present
+if [ -f "$CFG" ]; then
+  val=$(grep "^VICTORIALOGS_RETENTION=" "$CFG" | cut -d= -f2)
+  [ -n "$val" ] && RETENTION="$val"
+  val=$(grep "^VICTORIALOGS_PORT=" "$CFG" | cut -d= -f2)
+  [ -n "$val" ] && PORT="$val"
+fi
+
+victorialogs_start() {
+  if [ ! -f "$DAEMON" ]; then
+    echo "$DAEMON not found — VictoriaLogs not installed, skipping"
+    return 0
+  fi
+  if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+    echo "$NAME is already running"
+    return
+  fi
+  mkdir -p "$DATADIR"
+  echo "Starting $NAME (data in RAM: $DATADIR, retention: $RETENTION)..."
+  nohup $DAEMON \
+    -storageDataPath="$DATADIR" \
+    -retentionPeriod="$RETENTION" \
+    -httpListenAddr=":$PORT" \
+    > /var/log/$NAME.log 2>&1 &
+  echo $! > "$PIDFILE"
+  echo "$NAME started (pid $(cat "$PIDFILE"))"
+}
+
+victorialogs_stop() {
+  if [ -f "$PIDFILE" ]; then
+    echo "Stopping $NAME..."
+    kill "$(cat "$PIDFILE")" 2>/dev/null
+    rm -f "$PIDFILE"
+    echo "$NAME stopped"
+  else
+    echo "$NAME is not running"
+  fi
+}
+
+victorialogs_status() {
+  if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+    echo "$NAME is running (pid $(cat "$PIDFILE"))"
+  else
+    echo "$NAME is not running"
+  fi
+}
+
+case "$1" in
+  start)   victorialogs_start ;;
+  stop)    victorialogs_stop ;;
+  restart) victorialogs_stop; sleep 1; victorialogs_start ;;
+  status)  victorialogs_status ;;
+  *)       echo "usage: $0 start|stop|restart|status" ;;
+esac
