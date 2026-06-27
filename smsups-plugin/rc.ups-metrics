@@ -25,7 +25,7 @@ ups_metrics_start() {
   fi
   echo "Starting $NAME..."
   cd "$DIR" || exit 1
-  nohup $DAEMON > /var/log/$NAME.log 2>&1 &
+  nohup $DAEMON > /dev/null 2>&1 &
   echo $! > "$PIDFILE"
   echo "$NAME started (pid $(cat $PIDFILE))"
 }
