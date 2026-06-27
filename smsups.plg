@@ -4,14 +4,14 @@
 <!ENTITY name         "smsups">
 <!ENTITY author       "Nitori">
 <!ENTITY repo         "unraid-smsups">
-<!ENTITY tag          "v1.0.0">
+<!ENTITY tag          "v1.0.1">
 <!ENTITY launch       "Settings/SMSUps">
 <!ENTITY icon         "fa-battery-full">
 <!ENTITY min          "6.12.0">
 <!ENTITY forgejo      "http://192.168.1.108:3030">
 <!ENTITY pluginURL    "&forgejo;/&author;/&repo;/releases/download/&tag;/&name;.plg">
 <!ENTITY packageURL   "&forgejo;/&author;/&repo;/releases/download/&tag;/&name;.txz">
-<!ENTITY version      "2026.06.27.0311">
+<!ENTITY version      "2026.06.27.0313">
 <!ENTITY MD5          "790716f7f5798ac21b7998849d97e71c">
 ]>
 
