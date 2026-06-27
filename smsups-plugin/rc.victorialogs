@@ -16,7 +16,15 @@ if [ -f "$CFG" ]; then
   [ -n "$val" ] && PORT="$val"
 fi
 
+is_enabled() {
+  [ -f "$CFG" ] && grep -q "^VICTORIALOGS_ENABLED=yes" "$CFG"
+}
+
 victorialogs_start() {
+  if ! is_enabled; then
+    echo "$NAME is disabled in $CFG"
+    return 0
+  fi
   if [ ! -f "$DAEMON" ]; then
     echo "$DAEMON not found — VictoriaLogs not installed, skipping"
     return 0
