@@ -11,10 +11,14 @@ $bridge_cfg= "$flash_dir/conf/bridge.yaml";
 
 $ups_enabled    = false;
 $bridge_enabled = false;
+$vlogs_retention = "24h";
+$vlogs_port      = "9428";
 if (file_exists($cfg_file)) {
     $cfg_content = file_get_contents($cfg_file);
     $ups_enabled    = strpos($cfg_content, 'UPS_METRICS_ENABLED=yes') !== false;
     $bridge_enabled = strpos($cfg_content, 'BRIDGE_ENABLED=yes') !== false;
+    if (preg_match('/^VICTORIALOGS_RETENTION=(.+)$/m', $cfg_content, $m)) $vlogs_retention = trim($m[1]);
+    if (preg_match('/^VICTORIALOGS_PORT=(.+)$/m',      $cfg_content, $m)) $vlogs_port      = trim($m[1]);
 }
 
 $ups_config_content    = file_exists($ups_cfg)    ? htmlspecialchars(file_get_contents($ups_cfg))    : "";
@@ -63,6 +67,8 @@ $bridge_config_content = file_exists($bridge_cfg) ? htmlspecialchars(file_get_co
         <span id="status-ups">ups-metrics: <i>checking...</i></span>
         &nbsp;|&nbsp;
         <span id="status-bridge">NUT Bridge: <i>checking...</i></span>
+        &nbsp;|&nbsp;
+        <span id="status-vlogs">VictoriaLogs: <i>checking...</i></span>
     </div>
 
     <div class="autostart-row">
@@ -87,6 +93,7 @@ $bridge_config_content = file_exists($bridge_cfg) ? htmlspecialchars(file_get_co
     <div>
         <button class="tab-btn active" onclick="switchTab('tab-ups', this)">ups-metrics</button>
         <button class="tab-btn" onclick="switchTab('tab-bridge', this)">NUT Bridge</button>
+        <button class="tab-btn" onclick="switchTab('tab-vlogs', this)">VictoriaLogs</button>
     </div>
 
     <div id="tab-ups" class="tab-content active">
@@ -106,6 +113,28 @@ $bridge_config_content = file_exists($bridge_cfg) ? htmlspecialchars(file_get_co
             <button class="smsups-btn" onclick="svcAction('bridge', 'start')">&#9654; Start</button>
             <button class="smsups-btn danger" onclick="svcAction('bridge', 'stop')">&#9632; Stop</button>
             <button class="smsups-btn" onclick="svcAction('bridge', 'restart')">&#8635; Restart</button>
+        </div>
+    </div>
+
+    <div id="tab-vlogs" class="tab-content">
+        <div style="padding:16px 0; display:flex; flex-direction:column; gap:12px; max-width:400px;">
+            <label style="display:flex; flex-direction:column; gap:4px; font-family:monospace; font-size:13px;">
+                Retention period
+                <input id="vlogs-retention" type="text" value="<?= htmlspecialchars($vlogs_retention) ?>"
+                    style="background:#1e1e1e;color:#d4d4d4;border:1px solid #444;border-radius:4px;padding:6px 10px;font-family:monospace;font-size:13px;">
+                <span style="color:#888;font-size:11px;">Ex: 1h, 24h, 7d — dados guardados em RAM (/dev/shm)</span>
+            </label>
+            <label style="display:flex; flex-direction:column; gap:4px; font-family:monospace; font-size:13px;">
+                HTTP port
+                <input id="vlogs-port" type="text" value="<?= htmlspecialchars($vlogs_port) ?>"
+                    style="background:#1e1e1e;color:#d4d4d4;border:1px solid #444;border-radius:4px;padding:6px 10px;font-family:monospace;font-size:13px;">
+            </label>
+        </div>
+        <div>
+            <button class="smsups-btn" onclick="saveVlogs()">&#128190; Save &amp; Restart</button>
+            <button class="smsups-btn" onclick="svcAction('victorialogs', 'start')">&#9654; Start</button>
+            <button class="smsups-btn danger" onclick="svcAction('victorialogs', 'stop')">&#9632; Stop</button>
+            <button class="smsups-btn" onclick="svcAction('victorialogs', 'restart')">&#8635; Restart</button>
         </div>
     </div>
 
@@ -145,12 +174,22 @@ function setAutostart(service, enabled) {
     $.post(api, { action: 'set_autostart', service: service, enabled: enabled ? 'yes' : 'no' }, out);
 }
 
+function saveVlogs() {
+    var retention = document.getElementById('vlogs-retention').value;
+    var port      = document.getElementById('vlogs-port').value;
+    $.post(api, { action: 'save_vlogs', retention: retention, port: port }, out);
+    setTimeout(updateStatus, 1500);
+}
+
 function updateStatus() {
     $.get(api, { action: 'status', service: 'ups-metrics' }, function(d) {
         document.getElementById('status-ups').innerHTML = 'ups-metrics: <b>' + d + '</b>';
     });
     $.get(api, { action: 'status', service: 'bridge' }, function(d) {
         document.getElementById('status-bridge').innerHTML = 'NUT Bridge: <b>' + d + '</b>';
+    });
+    $.get(api, { action: 'status', service: 'victorialogs' }, function(d) {
+        document.getElementById('status-vlogs').innerHTML = 'VictoriaLogs: <b>' + d + '</b>';
     });
 }
 
