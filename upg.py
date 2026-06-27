@@ -103,95 +103,93 @@ def resolve_package_source(package_source):
     return clone_path, tmpdir
 
 
-def create_slackware_package(source_path, output_dir=None):
+def create_slackware_package(source_path, output_dir=None, plugin_name=None):
     """
-    Create a Slackware package from a directory structure.
-
-    Args:
-        source_path: Path to directory containing package structure
-        output_dir: Directory to place output package (default: source_path parent)
-
-    Returns:
-        Path to created package file, or None on error
+    Create a Slackware package with explicit pathing to bypass 'Can't make output' errors.
     """
+    import shutil
     source_path = Path(source_path).resolve()
-    if not source_path.exists():
-        print(f"Error: Source path does not exist: {source_path}")
-        return None
 
     if not source_path.is_dir():
         print(f"Error: Source path is not a directory: {source_path}")
         return None
+
+    if not plugin_name:
+        plugin_name = source_path.name
 
     # Determine output directory
     if output_dir is None:
         output_dir = source_path.parent
     else:
         output_dir = Path(output_dir).resolve()
-
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Download makepkg script
-    makepkg_url = "https://mirrors.slackware.com/slackware/slackware64-15.0/source/a/pkgtools/scripts/makepkg"
+    pkg_name = f"{plugin_name}.txz"
+    final_package_path = output_dir / pkg_name
 
-    with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix='_makepkg') as tmp:
-        makepkg_path = tmp.name
-        try:
-            print(f"Downloading makepkg from {makepkg_url}...")
-            with urllib.request.urlopen(makepkg_url) as response:
-                tmp.write(response.read())
-        except Exception as e:
-            print(f"Error downloading makepkg: {e}")
-            return None
+    # Remove existing package if it exists to prevent makepkg from failing
+    if final_package_path.exists():
+        final_package_path.unlink()
 
-    # Make makepkg executable
-    os.chmod(makepkg_path, os.stat(makepkg_path).st_mode | stat.S_IEXEC)
-
+    # Build staging directory with proper install tree
+    staging_dir = Path(tempfile.mkdtemp())
     try:
-        # Run makepkg
-        print(f"Creating Slackware package from {source_path}...")
-        result = subprocess.run(
-            [makepkg_path, '-l', 'y', '-c', 'n', f'{source_path.name}.txz'],
-            cwd=source_path,
-            capture_output=True,
-            text=True
-        )
+        plugin_dir = staging_dir / "usr" / "local" / "emhttp" / "plugins" / plugin_name
+        plugin_dir.mkdir(parents=True)
+        shutil.copytree(source_path, plugin_dir, dirs_exist_ok=True)
 
-        if result.returncode != 0:
-            print(f"Error running makepkg:")
-            print(result.stderr)
-            return None
+        makepkg_url = "https://mirrors.slackware.com/slackware/slackware64-15.0/source/a/pkgtools/scripts/makepkg"
 
-        # Find the created package
-        package_file = source_path / f'{source_path.name}.txz'
+        with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix='_makepkg') as tmp:
+            makepkg_path = tmp.name
+            try:
+                print(f"Downloading makepkg...")
+                with urllib.request.urlopen(makepkg_url) as response:
+                    tmp.write(response.read())
+            except Exception as e:
+                print(f"Error downloading makepkg: {e}")
+                return None
 
-        if package_file.exists():
-            # Move to output directory if different
-            final_path = output_dir / package_file.name
-            if package_file != final_path:
-                package_file.rename(final_path)
-                package_file = final_path
+        os.chmod(makepkg_path, os.stat(makepkg_path).st_mode | stat.S_IEXEC)
 
-            print(f"Package created: {package_file}")
-            return package_file
-        else:
-            print("Error: Package file was not created")
-            return None
+        try:
+            print(f"Creating Slackware package: {pkg_name}")
+            result = subprocess.run(
+                [makepkg_path, '-l', 'y', '-c', 'n', str(final_package_path)],
+                cwd=staging_dir,
+                capture_output=True,
+                text=True
+            )
+
+            if result.returncode != 0:
+                print("--- MAKEPKG ERROR LOG START ---")
+                print("STDOUT:", result.stdout)
+                print("STDERR:", result.stderr)
+                print("--- MAKEPKG ERROR LOG END ---")
+                return None
+
+            if final_package_path.exists():
+                print(f"Package created successfully: {final_package_path}")
+                return final_package_path
+            else:
+                print(f"Error: makepkg finished but {final_package_path} missing.")
+                return None
+
+        finally:
+            if os.path.exists(makepkg_path):
+                os.unlink(makepkg_path)
 
     finally:
-        # Clean up temporary makepkg script
-        try:
-            os.unlink(makepkg_path)
-        except:
-            pass
+        shutil.rmtree(staging_dir, ignore_errors=True)
 
 
 def read_file_content(filepath):
     """Read content from a file path."""
     path = Path(filepath)
-    if path.exists():
-        return path.read_text()
-    return f"<!-- File not found: {filepath} -->"
+    if not path.exists():
+        print(f"Error: File not found: {filepath}")
+        sys.exit(1)
+    return path.read_text()
 
 
 def extract_comments_map(toml_text):
@@ -406,7 +404,11 @@ Examples:
             sys.exit(1)
 
         output_dir = Path(args.base_path) if args.base_path != "." else Path.cwd()
-        package_file = create_slackware_package(package_source_path, output_dir)
+        package_file = create_slackware_package(
+            package_source_path,
+            output_dir,
+            plugin_name=entities.get('name')
+        )
         if not package_file:
             print("Warning: Failed to create Slackware package")
 
