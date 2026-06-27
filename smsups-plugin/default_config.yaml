@@ -9,13 +9,14 @@ device:
         client:
             dial_timeout: 5s
 
-# logs:
-#     # "gelf" ou "victorialogs" — descomente se tiver um destes backends disponível
-#     type: "victorialogs"
-#     victorialogs:
-#         address: localhost
-#         port: 9428
-#         timeout: 30s
+logs:
+    # Campo obrigatório — ups-metrics não inicia sem ele.
+    # Os erros de conexão vão para /var/log/ups-metrics.log, não para o syslog.
+    type: "victorialogs"
+    victorialogs:
+        address: localhost
+        port: 9428
+        timeout: 30s
 
 metrics:
     influxdb:
