@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/bobbintb/smsups-nut-bridge/internal/mapper"
+	"smsups-nut-bridge/internal/mapper"
 )
 
 func Write(path string, vars mapper.NUTVars) error {

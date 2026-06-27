@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bobbintb/smsups-nut-bridge/internal/mapper"
-	"github.com/bobbintb/smsups-nut-bridge/internal/nut"
+	"smsups-nut-bridge/internal/mapper"
+	"smsups-nut-bridge/internal/nut"
 )
 
 func TestWrite_CreatesFile(t *testing.T) {

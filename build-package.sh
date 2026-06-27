@@ -30,20 +30,13 @@ rm -rf "$UPS_TMP"
 chmod +x "$PKG_DIR/usr/local/bin/ups-metrics"
 echo "ups-metrics binary: OK (latest main)"
 
-echo "=== Copying plugin files ==="
-cp smsups-plugin/smsups.page          "$PKG_DIR/usr/local/emhttp/plugins/$PLUGIN/"
-cp smsups-plugin/exec.php             "$PKG_DIR/usr/local/emhttp/plugins/$PLUGIN/php/"
-cp smsups-plugin/default_config.yaml  "$PKG_DIR/usr/local/emhttp/plugins/$PLUGIN/"
-cp smsups-plugin/default_bridge.yaml  "$PKG_DIR/usr/local/emhttp/plugins/$PLUGIN/"
-cp smsups-plugin/rc.ups-metrics       "$PKG_DIR/etc/rc.d/rc.ups-metrics"
-cp smsups-plugin/rc.smsups-bridge     "$PKG_DIR/etc/rc.d/rc.smsups-bridge"
-
 chmod +x "$PKG_DIR/usr/local/bin/smsups-nut-bridge"
-chmod +x "$PKG_DIR/etc/rc.d/"*
+chmod +x "$PKG_DIR/usr/local/bin/ups-metrics"
 
-echo "=== Package contents ==="
-find "$PKG_DIR" -type f | sort
+echo "=== Binary package contents ==="
+find "$PKG_DIR/usr/local/bin" -type f | sort
 
 echo ""
-echo "=== Next step: run upg.py to generate .plg ==="
-echo "python upg.py smsups.toml -p ./$PKG_DIR -o smsups.plg"
+echo "=== Next steps ==="
+echo "python make_txz.py          # package binaries → smsups-package.txz"
+echo "python upg.py smsups.toml --entity MD5=<md5-from-above> -o smsups.plg"

@@ -3,7 +3,7 @@ package prometheus_test
 import (
 	"testing"
 
-	"github.com/bobbintb/smsups-nut-bridge/internal/prometheus"
+	"smsups-nut-bridge/internal/prometheus"
 )
 
 const sampleMetrics = `# HELP ups_status The status of the UPS

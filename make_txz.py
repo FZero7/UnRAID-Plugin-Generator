@@ -5,21 +5,24 @@ from pathlib import Path
 pkg_dir = Path("smsups-package")
 out_file = Path("smsups-package.txz")
 
-def get_mode(arcname):
-    if "rc.d" in arcname or "/bin/" in arcname:
-        return 0o755
-    return 0o644
+# Only the binaries go in the .txz — all text files are embedded in the PLG as INLINE CDATA
+BINARY_DIRS = {"usr/local/bin"}
+
+def is_binary(arcname):
+    return any(arcname.startswith(d) for d in BINARY_DIRS)
 
 with tarfile.open(out_file, "w:xz") as tar:
     for file_path in sorted(pkg_dir.rglob("*")):
         if file_path.is_file():
             arcname = str(file_path.relative_to(pkg_dir)).replace("\\", "/")
+            if not is_binary(arcname):
+                continue
             info = tar.gettarinfo(str(file_path), arcname=arcname)
             info.uid = 0
             info.gid = 0
             info.uname = "root"
             info.gname = "root"
-            info.mode = get_mode(arcname)
+            info.mode = 0o755
             with open(file_path, "rb") as f:
                 tar.addfile(info, f)
 

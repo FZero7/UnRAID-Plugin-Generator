@@ -1,4 +1,4 @@
-module github.com/bobbintb/smsups-nut-bridge
+module smsups-nut-bridge
 
 go 1.21
 

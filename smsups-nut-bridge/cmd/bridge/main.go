@@ -9,10 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/bobbintb/smsups-nut-bridge/internal/config"
-	"github.com/bobbintb/smsups-nut-bridge/internal/mapper"
-	"github.com/bobbintb/smsups-nut-bridge/internal/nut"
-	"github.com/bobbintb/smsups-nut-bridge/internal/prometheus"
+	"smsups-nut-bridge/internal/config"
+	"smsups-nut-bridge/internal/mapper"
+	"smsups-nut-bridge/internal/nut"
+	"smsups-nut-bridge/internal/prometheus"
 )
 
 func main() {
@@ -55,7 +55,7 @@ func run(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	vars := mapper.Map(metrics, cfg.NUT.Manufacturer)
+	vars := mapper.Map(metrics, cfg.NUT)
 	if cfg.NUT.UPSName != "" {
 		vars["ups.id"] = cfg.NUT.UPSName
 	}
@@ -65,6 +65,8 @@ func run(ctx context.Context, cfg *config.Config) error {
 	if err := nut.Write(cfg.NUT.DevFile, vars); err != nil {
 		return err
 	}
-	log.Printf("updated %s: status=%s charge=%s%%", cfg.NUT.DevFile, vars["ups.status"], vars["battery.charge"])
+	if cfg.Source.Debug {
+		log.Printf("updated %s: status=%s charge=%s%%", cfg.NUT.DevFile, vars["ups.status"], vars["battery.charge"])
+	}
 	return nil
 }

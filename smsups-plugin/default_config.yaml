@@ -9,13 +9,13 @@ device:
         client:
             dial_timeout: 5s
 
-logs:
-    # "gelf" ou "victorialogs"
-    type: "victorialogs"
-    victorialogs:
-        address: localhost
-        port: 9428
-        timeout: 30s
+# logs:
+#     # "gelf" ou "victorialogs" — descomente se tiver um destes backends disponível
+#     type: "victorialogs"
+#     victorialogs:
+#         address: localhost
+#         port: 9428
+#         timeout: 30s
 
 metrics:
     influxdb:

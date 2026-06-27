@@ -3,8 +3,9 @@ package mapper_test
 import (
 	"testing"
 
-	"github.com/bobbintb/smsups-nut-bridge/internal/mapper"
-	"github.com/bobbintb/smsups-nut-bridge/internal/prometheus"
+	"smsups-nut-bridge/internal/config"
+	"smsups-nut-bridge/internal/mapper"
+	"smsups-nut-bridge/internal/prometheus"
 )
 
 func baseMetrics() []prometheus.Metric {
@@ -26,7 +27,7 @@ func baseMetrics() []prometheus.Metric {
 }
 
 func TestMap_AnalogMetrics(t *testing.T) {
-	vars := mapper.Map(baseMetrics(), "SMS Brasil")
+	vars := mapper.Map(baseMetrics(), config.NUTConfig{Manufacturer: "SMS Brasil"})
 
 	cases := map[string]string{
 		"battery.charge":   "85",
@@ -45,7 +46,7 @@ func TestMap_AnalogMetrics(t *testing.T) {
 }
 
 func TestMap_StatusOnGrid(t *testing.T) {
-	vars := mapper.Map(baseMetrics(), "SMS Brasil")
+	vars := mapper.Map(baseMetrics(), config.NUTConfig{Manufacturer: "SMS Brasil"})
 	if vars["ups.status"] != "OL" {
 		t.Errorf("ups.status: expected OL, got %q", vars["ups.status"])
 	}
@@ -58,25 +59,47 @@ func TestMap_StatusOnBattery(t *testing.T) {
 			metrics[i].Value = 0
 		}
 	}
-	vars := mapper.Map(metrics, "SMS Brasil")
+	vars := mapper.Map(metrics, config.NUTConfig{Manufacturer: "SMS Brasil"})
 	if vars["ups.status"] != "OB" {
 		t.Errorf("ups.status: expected OB, got %q", vars["ups.status"])
 	}
 }
 
-func TestMap_StatusLowBattery(t *testing.T) {
+func TestMap_StatusReplaceBattery(t *testing.T) {
 	metrics := baseMetrics()
 	for i := range metrics {
-		if metrics[i].Labels["state"] == "on_grid" {
-			metrics[i].Value = 0
-		}
 		if metrics[i].Labels["state"] == "battery_fail" {
 			metrics[i].Value = 1
 		}
 	}
-	vars := mapper.Map(metrics, "SMS Brasil")
+	vars := mapper.Map(metrics, config.NUTConfig{Manufacturer: "SMS Brasil"})
+	status := vars["ups.status"]
+	if !containsStr(status, "RB") {
+		t.Errorf("ups.status: expected RB, got %q", status)
+	}
+}
+
+func TestMap_StatusLowBatteryThreshold(t *testing.T) {
+	metrics := baseMetrics()
+	for i := range metrics {
+		if metrics[i].Labels["type"] == "battery_level" {
+			metrics[i].Value = 15
+		}
+		if metrics[i].Labels["state"] == "on_grid" {
+			metrics[i].Value = 0
+		}
+	}
+	vars := mapper.Map(metrics, config.NUTConfig{Manufacturer: "SMS Brasil", LowBatteryThreshold: 20})
 	if vars["ups.status"] != "OB LB" {
 		t.Errorf("ups.status: expected 'OB LB', got %q", vars["ups.status"])
+	}
+}
+
+func TestMap_StatusNotLowBatteryAboveThreshold(t *testing.T) {
+	metrics := baseMetrics() // battery_level = 85
+	vars := mapper.Map(metrics, config.NUTConfig{Manufacturer: "SMS Brasil", LowBatteryThreshold: 20})
+	if containsStr(vars["ups.status"], "LB") {
+		t.Errorf("ups.status: should not contain LB at 85%%, got %q", vars["ups.status"])
 	}
 }
 
@@ -90,7 +113,7 @@ func TestMap_StatusFlags(t *testing.T) {
 			metrics[i].Value = 1
 		}
 	}
-	vars := mapper.Map(metrics, "SMS Brasil")
+	vars := mapper.Map(metrics, config.NUTConfig{Manufacturer: "SMS Brasil"})
 	status := vars["ups.status"]
 	if !contains(status, "BOOST") {
 		t.Errorf("expected BOOST in status, got %q", status)
@@ -101,14 +124,14 @@ func TestMap_StatusFlags(t *testing.T) {
 }
 
 func TestMap_ModelFromHost(t *testing.T) {
-	vars := mapper.Map(baseMetrics(), "SMS Brasil")
+	vars := mapper.Map(baseMetrics(), config.NUTConfig{Manufacturer: "SMS Brasil"})
 	if vars["ups.model"] != "TestUPS" {
 		t.Errorf("ups.model: expected TestUPS, got %q", vars["ups.model"])
 	}
 }
 
 func TestMap_Manufacturer(t *testing.T) {
-	vars := mapper.Map(baseMetrics(), "SMS Brasil")
+	vars := mapper.Map(baseMetrics(), config.NUTConfig{Manufacturer: "SMS Brasil"})
 	if vars["ups.mfr"] != "SMS Brasil" {
 		t.Errorf("ups.mfr: expected 'SMS Brasil', got %q", vars["ups.mfr"])
 	}

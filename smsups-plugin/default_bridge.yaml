@@ -3,9 +3,17 @@ source:
     port: 9110
     interval: 15s
     timeout: 5s
+    debug: false    # true → loga cada atualização (útil para diagnóstico)
 
 nut:
     dev_file: /tmp/smsups.dev
     ups_name: smsups
     description: "SMS Brasil UPS"
     manufacturer: "SMS Brasil"
+    # Limiar de bateria fraca — abaixo deste % o status LB é ativado (padrão: 20)
+    # low_battery_threshold: 20
+
+    # Estimativa de potência (todos opcionais e independentes):
+    # nominal_va: 1500      # Potência nominal do UPS em VA  → ups.power.nominal / ups.power
+    # nominal_watts: 900    # Potência nominal em W (prioridade sobre va×pf) → ups.realpower.nominal / ups.realpower
+    # power_factor: 0.9     # Fator de potência → ups.powerfactor (e deriva W de VA se nominal_watts ausente)

@@ -421,22 +421,22 @@ Examples:
     if 'MD5' not in entities:
         source_to_hash = None
 
-    if package_file:
-        source_to_hash = package_file
-    elif 'packageURL' in entities:
-        # Expand entity references in packageURL
-        package_url = entities['packageURL']
-        for key, value in entities.items():
-            package_url = package_url.replace(f'&{key};', value)
-        source_to_hash = package_url
+        if package_file:
+            source_to_hash = package_file
+        elif 'packageURL' in entities:
+            # Expand entity references in packageURL
+            package_url = entities['packageURL']
+            for key, value in entities.items():
+                package_url = package_url.replace(f'&{key};', value)
+            source_to_hash = package_url
 
-    if source_to_hash:
-        md5 = calculate_md5(source_to_hash)
-        if md5:
-            entities['MD5'] = md5
-            print(f"Auto-generated MD5: {md5}")
-        else:
-            print("Warning: No source available to generate MD5 hash")
+        if source_to_hash:
+            md5 = calculate_md5(source_to_hash)
+            if md5:
+                entities['MD5'] = md5
+                print(f"Auto-generated MD5: {md5}")
+            else:
+                print("Warning: No source available to generate MD5 hash")
 
     # Build XML
     xml_lines = []

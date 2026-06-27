@@ -18,13 +18,18 @@ type SourceConfig struct {
 	Port     string        `yaml:"port"`
 	Interval time.Duration `yaml:"interval"`
 	Timeout  time.Duration `yaml:"timeout"`
+	Debug    bool          `yaml:"debug"`
 }
 
 type NUTConfig struct {
-	DevFile      string `yaml:"dev_file"`
-	UPSName      string `yaml:"ups_name"`
-	Description  string `yaml:"description"`
-	Manufacturer string `yaml:"manufacturer"`
+	DevFile      string  `yaml:"dev_file"`
+	UPSName      string  `yaml:"ups_name"`
+	Description  string  `yaml:"description"`
+	Manufacturer string  `yaml:"manufacturer"`
+	NominalVA           float64 `yaml:"nominal_va"`            // optional: ups.power.nominal
+	NominalWatts        float64 `yaml:"nominal_watts"`         // optional: ups.realpower.nominal (priority over va×pf)
+	PowerFactor         float64 `yaml:"power_factor"`          // optional: ups.powerfactor (also used to derive watts from va)
+	LowBatteryThreshold float64 `yaml:"low_battery_threshold"` // % below which LB status is set (default 20)
 }
 
 func Load(path string) (*Config, error) {
@@ -47,6 +52,9 @@ func Load(path string) (*Config, error) {
 	}
 	if cfg.NUT.DevFile == "" {
 		cfg.NUT.DevFile = "/tmp/smsups.dev"
+	}
+	if cfg.NUT.LowBatteryThreshold == 0 {
+		cfg.NUT.LowBatteryThreshold = 20
 	}
 	return &cfg, nil
 }
