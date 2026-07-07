@@ -1,7 +1,8 @@
 <?xml version='1.0' standalone='yes'?>
 
 <!DOCTYPE PLUGIN [
-<!ENTITY name         "smsups">
+<!ENTITY name         "SMS-UPS">
+<!ENTITY slug         "smsups">
 <!ENTITY author       "FZero7">
 <!ENTITY repo         "unraid-smsups">
 <!ENTITY tag          "1.0.9">
@@ -10,12 +11,12 @@
 <!ENTITY min          "6.12.0">
 <!ENTITY github       "https://github.com">
 <!ENTITY pluginURL    "&github;/&author;/&repo;/releases/download/&tag;/&name;.plg">
-<!ENTITY packageURL   "&github;/&author;/&repo;/releases/download/&tag;/&name;.txz">
+<!ENTITY packageURL   "&github;/&author;/&repo;/releases/download/&tag;/&slug;.txz">
 <!ENTITY MD5          "1f831a391fef6943d3da09bbba915e12">
-<!ENTITY version      "2026.07.07.0517">
+<!ENTITY version      "2026.07.07.1743">
 ]>
 
-<PLUGIN name="&name;" author="&author;" repo="&repo;" tag="&tag;" launch="&launch;" icon="&icon;" min="&min;" github="&github;" pluginURL="&pluginURL;" packageURL="&packageURL;" MD5="&MD5;" version="&version;">
+<PLUGIN name="&name;" slug="&slug;" author="&author;" repo="&repo;" tag="&tag;" launch="&launch;" icon="&icon;" min="&min;" github="&github;" pluginURL="&pluginURL;" packageURL="&packageURL;" MD5="&MD5;" version="&version;">
 
 <CHANGES>
 </CHANGES>
@@ -170,7 +171,7 @@ esac
 </FILE>
 
 <!-- Unraid plugin page and AJAX backend -->
-<FILE Name="/usr/local/emhttp/plugins/&name;/&name;.page">
+<FILE Name="/usr/local/emhttp/plugins/&slug;/&slug;.page">
 <INLINE>
 <![CDATA[
 Menu="NetworkServices"
@@ -351,7 +352,7 @@ setInterval(updateStatus, 10000);
 </INLINE>
 </FILE>
 
-<FILE Name="/usr/local/emhttp/plugins/&name;/php/exec.php">
+<FILE Name="/usr/local/emhttp/plugins/&slug;/php/exec.php">
 <INLINE>
 <![CDATA[
 <?php
@@ -469,7 +470,7 @@ switch ($action) {
 </FILE>
 
 <!-- Default config files — copied to /boot on first install -->
-<FILE Name="/usr/local/emhttp/plugins/&name;/default_config.yaml">
+<FILE Name="/usr/local/emhttp/plugins/&slug;/default_config.yaml">
 <INLINE>
 <![CDATA[
 device:
@@ -506,7 +507,7 @@ metrics:
 </INLINE>
 </FILE>
 
-<FILE Name="/usr/local/emhttp/plugins/&name;/default_bridge.yaml">
+<FILE Name="/usr/local/emhttp/plugins/&slug;/default_bridge.yaml">
 <INLINE>
 <![CDATA[
 source:
@@ -533,7 +534,7 @@ nut:
 </FILE>
 
 <!-- Log rotation for /var/log/ups-metrics.log and /var/log/smsups-bridge.log -->
-<FILE Name="/etc/logrotate.d/&name;">
+<FILE Name="/etc/logrotate.d/&slug;">
 <INLINE>
 <![CDATA[
 /var/log/ups-metrics.log /var/log/smsups-bridge.log {
@@ -551,7 +552,7 @@ nut:
 </FILE>
 
 <!-- Binaries package cached on /boot — extracted by install.sh and rc scripts on boot -->
-<FILE Name="/boot/config/plugins/&name;/&name;.txz">
+<FILE Name="/boot/config/plugins/&slug;/&slug;.txz">
 <URL>&packageURL;</URL>
 <MD5>&MD5;</MD5>
 </FILE>
