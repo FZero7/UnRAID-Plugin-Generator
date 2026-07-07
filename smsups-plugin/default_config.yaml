@@ -13,7 +13,7 @@ logs:
     # "gelf" ou "victorialogs"
     type: "victorialogs"
     victorialogs:
-        address: localhost
+        address: localhost   # aponte para a sua instância VictoriaLogs
         port: 9428
         timeout: 30s
 

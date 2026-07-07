@@ -1,4 +1,5 @@
 <?php
+session_write_close(); // release session lock so concurrent AJAX calls don't queue
 $plugin    = "smsups";
 $flash_dir = "/boot/config/plugins/$plugin";
 $cfg_file  = "$flash_dir/smsups.cfg";
@@ -11,7 +12,6 @@ $service = $_REQUEST['service'] ?? '';
 $rc = [
     'ups-metrics'  => '/etc/rc.d/rc.ups-metrics',
     'bridge'       => '/etc/rc.d/rc.smsups-bridge',
-    'victorialogs' => '/etc/rc.d/rc.victorialogs',
 ];
 
 function runrc($rc, $cmd) {
@@ -55,21 +55,18 @@ switch ($action) {
         break;
 
     case 'start_all':
-        echo runrc($rc['victorialogs'], 'start') . "\n";
-        echo runrc($rc['ups-metrics'],  'start') . "\n";
-        echo runrc($rc['bridge'],        'start');
+        echo runrc($rc['ups-metrics'], 'start') . "\n";
+        echo runrc($rc['bridge'],      'start');
         break;
 
     case 'stop_all':
-        echo runrc($rc['ups-metrics'],  'stop') . "\n";
-        echo runrc($rc['bridge'],        'stop') . "\n";
-        echo runrc($rc['victorialogs'], 'stop');
+        echo runrc($rc['ups-metrics'], 'stop') . "\n";
+        echo runrc($rc['bridge'],      'stop');
         break;
 
     case 'restart_all':
-        echo runrc($rc['victorialogs'], 'restart') . "\n";
-        echo runrc($rc['ups-metrics'],  'restart') . "\n";
-        echo runrc($rc['bridge'],        'restart');
+        echo runrc($rc['ups-metrics'], 'restart') . "\n";
+        echo runrc($rc['bridge'],      'restart');
         break;
 
     case 'save':
@@ -83,22 +80,11 @@ switch ($action) {
         echo "Config saved. $out";
         break;
 
-    case 'save_vlcfg':
-        $retention = preg_replace('/[^a-zA-Z0-9]/', '', $_POST['retention'] ?? '24h');
-        $port      = preg_replace('/[^0-9]/',        '', $_POST['port']      ?? '9428');
-        if (!$retention) $retention = '24h';
-        if (!$port)      $port      = '9428';
-        set_cfg_key($cfg_file, $flash_dir, 'VICTORIALOGS_RETENTION', $retention);
-        set_cfg_key($cfg_file, $flash_dir, 'VICTORIALOGS_PORT',      $port);
-        echo "VictoriaLogs config saved. " . runrc($rc['victorialogs'], 'restart');
-        break;
-
     case 'set_autostart':
         $enabled = ($_REQUEST['enabled'] ?? 'no') === 'yes' ? 'yes' : 'no';
         $key_map = [
-            'bridge'       => 'BRIDGE_ENABLED',
-            'ups-metrics'  => 'UPS_METRICS_ENABLED',
-            'victorialogs' => 'VICTORIALOGS_ENABLED',
+            'bridge'      => 'BRIDGE_ENABLED',
+            'ups-metrics' => 'UPS_METRICS_ENABLED',
         ];
         $key = $key_map[$service] ?? null;
         if (!$key) { echo "unknown service"; break; }

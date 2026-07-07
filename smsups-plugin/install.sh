@@ -7,6 +7,11 @@ echo "Configuring $PLUGIN..."
 
 mkdir -p "$FLASH_DIR/conf"
 
+echo "Installing binaries from cached package..."
+tar -xJf "$FLASH_DIR/$PLUGIN.txz" -C / --no-overwrite-dir
+chmod +x /usr/local/bin/ups-metrics /usr/local/bin/smsups-nut-bridge
+echo "Binaries installed"
+
 if [ ! -f "$FLASH_DIR/conf/config.yaml" ]; then
     cp "$EMHTTP/default_config.yaml" "$FLASH_DIR/conf/config.yaml"
     echo "Default ups-metrics config installed"
@@ -21,9 +26,6 @@ if [ ! -f "$FLASH_DIR/smsups.cfg" ]; then
     cat > "$FLASH_DIR/smsups.cfg" <<EOF
 UPS_METRICS_ENABLED=yes
 BRIDGE_ENABLED=yes
-VICTORIALOGS_ENABLED=yes
-VICTORIALOGS_RETENTION=24h
-VICTORIALOGS_PORT=9428
 EOF
     echo "Default smsups.cfg created"
 fi
@@ -39,7 +41,6 @@ echo "    port = /tmp/smsups.dev"
 echo "    desc = \"SMS Brasil UPS via Bridge\""
 echo ""
 
-/etc/rc.d/rc.victorialogs start
 /etc/rc.d/rc.ups-metrics start
 /etc/rc.d/rc.smsups-bridge start
 
