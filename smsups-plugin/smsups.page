@@ -1,4 +1,4 @@
-Menu="NetworkServices"
+Menu="SystemSettings"
 Title="SMS UPS"
 Icon="fa-battery-full"
 ---
@@ -14,6 +14,8 @@ $bridge_enabled = false;
 $vl_enabled     = false;
 $vl_retention   = "24h";
 $vl_port        = "9428";
+$log_size       = "5M";
+$log_rotate     = "3";
 
 if (file_exists($cfg_file)) {
     $cfg_content = file_get_contents($cfg_file);
@@ -22,6 +24,8 @@ if (file_exists($cfg_file)) {
     $vl_enabled     = strpos($cfg_content, 'VICTORIALOGS_ENABLED=yes') !== false;
     if (preg_match('/^VICTORIALOGS_RETENTION=(.+)$/m', $cfg_content, $m)) $vl_retention = trim($m[1]);
     if (preg_match('/^VICTORIALOGS_PORT=(.+)$/m',      $cfg_content, $m)) $vl_port      = trim($m[1]);
+    if (preg_match('/^LOG_SIZE=(.+)$/m',               $cfg_content, $m)) $log_size     = trim($m[1]);
+    if (preg_match('/^LOG_ROTATE=(.+)$/m',             $cfg_content, $m)) $log_rotate   = trim($m[1]);
 }
 
 $ups_config_content    = file_exists($ups_cfg)    ? htmlspecialchars(file_get_contents($ups_cfg))    : "";
@@ -109,6 +113,7 @@ $bridge_config_content = file_exists($bridge_cfg) ? htmlspecialchars(file_get_co
         <button class="tab-btn active" onclick="switchTab('tab-ups', this)">ups-metrics</button>
         <button class="tab-btn" onclick="switchTab('tab-bridge', this)">NUT Bridge</button>
         <button class="tab-btn" onclick="switchTab('tab-vl', this)">VictoriaLogs</button>
+        <button class="tab-btn" onclick="switchTab('tab-settings', this)">Settings</button>
     </div>
 
     <div id="tab-ups" class="tab-content active">
@@ -146,6 +151,22 @@ $bridge_config_content = file_exists($bridge_cfg) ? htmlspecialchars(file_get_co
             <button class="smsups-btn" onclick="svcAction('victorialogs', 'start')">&#9654; Start</button>
             <button class="smsups-btn danger" onclick="svcAction('victorialogs', 'stop')">&#9632; Stop</button>
             <button class="smsups-btn" onclick="svcAction('victorialogs', 'restart')">&#8635; Restart</button>
+        </div>
+    </div>
+
+    <div id="tab-settings" class="tab-content">
+        <div class="vl-form">
+            <label>Tamanho máximo por arquivo de log (ex: 1M, 5M, 50M)</label>
+            <input type="text" id="log-size" value="<?= htmlspecialchars($log_size) ?>" placeholder="5M">
+            <label>Número de rotações a manter</label>
+            <input type="text" id="log-rotate" value="<?= htmlspecialchars($log_rotate) ?>" placeholder="3">
+            <div style="color:#777;font-size:12px;">
+                Aplica a <code>/var/log/ups-metrics.log</code> e <code>/var/log/smsups-bridge.log</code>.
+                Logs ficam em RAM (tmpfs 128 MB) e somem no reboot. Reinicie os serviços para aplicar.
+            </div>
+        </div>
+        <div>
+            <button class="smsups-btn" onclick="saveLogConfig()">&#128190; Save</button>
         </div>
     </div>
 
@@ -187,6 +208,14 @@ function svcAction(service, action) {
 function allAction(action) {
     $.post(api, { action: action }, out);
     setTimeout(updateStatus, 1500);
+}
+
+function saveLogConfig() {
+    $.post(api, {
+        action:     'save_logcfg',
+        log_size:   document.getElementById('log-size').value,
+        log_rotate: document.getElementById('log-rotate').value
+    }, out);
 }
 
 function setAutostart(service, enabled) {

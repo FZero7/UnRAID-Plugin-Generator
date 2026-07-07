@@ -4,7 +4,7 @@
 <!ENTITY name         "smsups">
 <!ENTITY author       "FZero7">
 <!ENTITY repo         "unraid-smsups">
-<!ENTITY tag          "1.0.5">
+<!ENTITY tag          "1.0.6">
 <!ENTITY launch       "Settings/SMSUps">
 <!ENTITY icon         "fa-battery-full">
 <!ENTITY min          "6.12.0">
@@ -12,7 +12,7 @@
 <!ENTITY pluginURL    "&github;/&author;/&repo;/releases/download/&tag;/&name;.plg">
 <!ENTITY packageURL   "&github;/&author;/&repo;/releases/download/&tag;/&name;.txz">
 <!ENTITY MD5          "1f831a391fef6943d3da09bbba915e12">
-<!ENTITY version      "2026.07.07.0315">
+<!ENTITY version      "2026.07.07.0334">
 ]>
 
 <PLUGIN name="&name;" author="&author;" repo="&repo;" tag="&tag;" launch="&launch;" icon="&icon;" min="&min;" github="&github;" pluginURL="&pluginURL;" packageURL="&packageURL;" MD5="&MD5;" version="&version;">
@@ -301,7 +301,7 @@ esac
 <FILE Name="/usr/local/emhttp/plugins/&name;/&name;.page">
 <INLINE>
 <![CDATA[
-Menu="Settings"
+Menu="SystemSettings"
 Title="SMS UPS"
 Icon="fa-battery-full"
 ---
