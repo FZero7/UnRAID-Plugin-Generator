@@ -10,6 +10,33 @@ is_enabled() {
   [ -f "$CFG" ] && grep -q "^BRIDGE_ENABLED=yes" "$CFG"
 }
 
+write_logrotate() {
+  local size=$(grep "^LOG_SIZE=" "$CFG" 2>/dev/null | cut -d= -f2)
+  local rotate=$(grep "^LOG_ROTATE=" "$CFG" 2>/dev/null | cut -d= -f2)
+  size=${size:-5M}; rotate=${rotate:-3}
+  cat > /etc/logrotate.d/$PLUGIN <<EOF
+/var/log/ups-metrics.log /var/log/smsups-bridge.log {
+    daily
+    rotate $rotate
+    size $size
+    missingok
+    notifempty
+    copytruncate
+    compress
+}
+EOF
+}
+
+restore_binary() {
+  if [ ! -x "$DAEMON" ]; then
+    local src="$DIR/bin/$(basename $DAEMON)"
+    if [ -f "$src" ]; then
+      cp "$src" "$DAEMON"
+      chmod +x "$DAEMON"
+    fi
+  fi
+}
+
 bridge_start() {
   if ! is_enabled; then
     echo "$NAME is disabled in $CFG"
@@ -23,11 +50,18 @@ bridge_start() {
     echo "Config not found: $DIR/conf/bridge.yaml"
     return
   fi
+  restore_binary
+  write_logrotate
   echo "Starting $NAME..."
   cd "$DIR" || exit 1
   nohup $DAEMON -config conf/bridge.yaml > /var/log/$NAME.log 2>&1 &
   echo $! > "$PIDFILE"
   echo "$NAME started (pid $(cat $PIDFILE))"
+  # /tmp/smsups.dev is created by the bridge; give NUT's dummy-ups driver a chance to start
+  if [ -f /etc/nut/ups.conf ] && grep -q "dummy-ups" /etc/nut/ups.conf; then
+    sleep 3
+    upsdrvctl start 2>/dev/null || true
+  fi
 }
 
 bridge_stop() {
