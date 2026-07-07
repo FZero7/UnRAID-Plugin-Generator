@@ -4,15 +4,15 @@
 <!ENTITY name         "smsups">
 <!ENTITY author       "FZero7">
 <!ENTITY repo         "unraid-smsups">
-<!ENTITY tag          "1.0.8">
+<!ENTITY tag          "1.0.9">
 <!ENTITY launch       "Settings/SMSUps">
 <!ENTITY icon         "fa-battery-full">
 <!ENTITY min          "6.12.0">
 <!ENTITY github       "https://github.com">
 <!ENTITY pluginURL    "&github;/&author;/&repo;/releases/download/&tag;/&name;.plg">
 <!ENTITY packageURL   "&github;/&author;/&repo;/releases/download/&tag;/&name;.txz">
-<!ENTITY MD5          "1a092401b34d5e382db54ed4441e17f2">
-<!ENTITY version      "2026.07.07.0427">
+<!ENTITY MD5          "1f831a391fef6943d3da09bbba915e12">
+<!ENTITY version      "2026.07.07.0517">
 ]>
 
 <PLUGIN name="&name;" author="&author;" repo="&repo;" tag="&tag;" launch="&launch;" icon="&icon;" min="&min;" github="&github;" pluginURL="&pluginURL;" packageURL="&packageURL;" MD5="&MD5;" version="&version;">
@@ -121,10 +121,20 @@ bridge_start() {
   nohup $DAEMON -config conf/bridge.yaml > /var/log/$NAME.log 2>&1 &
   echo $! > "$PIDFILE"
   echo "$NAME started (pid $(cat $PIDFILE))"
-  # /tmp/smsups.dev is created by the bridge; give NUT's dummy-ups driver a chance to start
+  # At boot NUT starts before the bridge, and rc.nut aborts entirely (driver,
+  # upsd and upsmon) when /tmp/smsups.dev is missing. The bridge only writes
+  # the file after the first successful ups-metrics fetch (15s tick + UPS
+  # login), so wait for it in background and then restart the full NUT stack.
   if [ -f /etc/nut/ups.conf ] && grep -q "dummy-ups" /etc/nut/ups.conf; then
-    sleep 3
-    upsdrvctl start 2>/dev/null || true
+    (
+      for _ in $(seq 1 30); do
+        [ -f /tmp/smsups.dev ] && break
+        sleep 2
+      done
+      if [ -f /tmp/smsups.dev ] && ! pgrep -x upsd >/dev/null 2>&1; then
+        /etc/rc.d/rc.nut restart >/dev/null 2>&1
+      fi
+    ) &
   fi
 }
 
