@@ -5,6 +5,8 @@ $flash_dir = "/boot/config/plugins/$plugin";
 $cfg_file  = "$flash_dir/smsups.cfg";
 $ups_cfg   = "$flash_dir/conf/config.yaml";
 $bridge_cfg= "$flash_dir/conf/bridge.yaml";
+$logrotate_cfg = "$flash_dir/conf/logrotate.conf";
+$logrotate_etc = "/etc/logrotate.d/$plugin";
 
 $action  = $_REQUEST['action']  ?? '';
 $service = $_REQUEST['service'] ?? '';
@@ -70,6 +72,15 @@ switch ($action) {
         break;
 
     case 'save':
+        if ($service === 'logrotate') {
+            if (!is_dir(dirname($logrotate_cfg))) {
+                mkdir(dirname($logrotate_cfg), 0755, true);
+            }
+            file_put_contents($logrotate_cfg, $_POST['config'] ?? '');
+            copy($logrotate_cfg, $logrotate_etc);
+            echo "Logrotate config saved and applied.";
+            break;
+        }
         $cfg_path = ($service === 'bridge') ? $bridge_cfg : $ups_cfg;
         if (!is_dir(dirname($cfg_path))) {
             mkdir(dirname($cfg_path), 0755, true);

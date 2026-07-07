@@ -22,6 +22,14 @@ if [ ! -f "$FLASH_DIR/conf/bridge.yaml" ]; then
     echo "Default bridge config installed"
 fi
 
+if [ -f "$FLASH_DIR/conf/logrotate.conf" ]; then
+    cp "$FLASH_DIR/conf/logrotate.conf" "/etc/logrotate.d/$PLUGIN"
+    echo "Custom logrotate config applied"
+else
+    cp "/etc/logrotate.d/$PLUGIN" "$FLASH_DIR/conf/logrotate.conf"
+    echo "Default logrotate config saved to flash"
+fi
+
 if [ ! -f "$FLASH_DIR/smsups.cfg" ]; then
     cat > "$FLASH_DIR/smsups.cfg" <<EOF
 UPS_METRICS_ENABLED=yes

@@ -2,7 +2,7 @@
 name        = "smsups"
 author      = "FZero7"
 repo        = "unraid-smsups"
-tag         = "1.0.7"
+tag         = "1.0.8"
 launch      = "Settings/SMSUps"
 icon        = "fa-battery-full"
 min         = "6.12.0"

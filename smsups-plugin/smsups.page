@@ -8,6 +8,8 @@ $flash_dir = "/boot/config/plugins/$plugin";
 $cfg_file  = "$flash_dir/smsups.cfg";
 $ups_cfg   = "$flash_dir/conf/config.yaml";
 $bridge_cfg= "$flash_dir/conf/bridge.yaml";
+$logrotate_cfg = "$flash_dir/conf/logrotate.conf";
+$logrotate_etc = "/etc/logrotate.d/$plugin";
 
 $ups_enabled    = false;
 $bridge_enabled = false;
@@ -20,6 +22,8 @@ if (file_exists($cfg_file)) {
 
 $ups_config_content    = file_exists($ups_cfg)    ? htmlspecialchars(file_get_contents($ups_cfg))    : "";
 $bridge_config_content = file_exists($bridge_cfg) ? htmlspecialchars(file_get_contents($bridge_cfg)) : "";
+$logrotate_src = file_exists($logrotate_cfg) ? $logrotate_cfg : $logrotate_etc;
+$logrotate_content = file_exists($logrotate_src) ? htmlspecialchars(file_get_contents($logrotate_src)) : "";
 ?>
 
 <style>
@@ -88,6 +92,7 @@ $bridge_config_content = file_exists($bridge_cfg) ? htmlspecialchars(file_get_co
     <div>
         <button class="tab-btn active" onclick="switchTab('tab-ups', this)">ups-metrics</button>
         <button class="tab-btn" onclick="switchTab('tab-bridge', this)">NUT Bridge</button>
+        <button class="tab-btn" onclick="switchTab('tab-logrotate', this)">Log Rotation</button>
     </div>
 
     <div id="tab-ups" class="tab-content active">
@@ -107,6 +112,14 @@ $bridge_config_content = file_exists($bridge_cfg) ? htmlspecialchars(file_get_co
             <button class="smsups-btn" onclick="svcAction('bridge', 'start')">&#9654; Start</button>
             <button class="smsups-btn danger" onclick="svcAction('bridge', 'stop')">&#9632; Stop</button>
             <button class="smsups-btn" onclick="svcAction('bridge', 'restart')">&#8635; Restart</button>
+        </div>
+    </div>
+
+    <div id="tab-logrotate" class="tab-content">
+        <p>Rotation rules for <code>/var/log/ups-metrics.log</code> and <code>/var/log/smsups-bridge.log</code> (applied to <code>/etc/logrotate.d/smsups</code>, run daily by cron).</p>
+        <textarea id="cfg-logrotate" class="smsups-textarea" spellcheck="false"><?= $logrotate_content ?></textarea>
+        <div>
+            <button class="smsups-btn" onclick="saveConfig('logrotate', 'cfg-logrotate')">&#128190; Save &amp; Apply</button>
         </div>
     </div>
 

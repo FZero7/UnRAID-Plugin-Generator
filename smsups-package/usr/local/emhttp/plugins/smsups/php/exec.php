@@ -1,20 +1,45 @@
 <?php
+session_write_close(); // release session lock so concurrent AJAX calls don't queue
 $plugin    = "smsups";
 $flash_dir = "/boot/config/plugins/$plugin";
 $cfg_file  = "$flash_dir/smsups.cfg";
 $ups_cfg   = "$flash_dir/conf/config.yaml";
 $bridge_cfg= "$flash_dir/conf/bridge.yaml";
+$logrotate_cfg = "$flash_dir/conf/logrotate.conf";
+$logrotate_etc = "/etc/logrotate.d/$plugin";
 
 $action  = $_REQUEST['action']  ?? '';
 $service = $_REQUEST['service'] ?? '';
 
 $rc = [
-    'ups-metrics' => '/etc/rc.d/rc.ups-metrics',
-    'bridge'      => '/etc/rc.d/rc.smsups-bridge',
+    'ups-metrics'  => '/etc/rc.d/rc.ups-metrics',
+    'bridge'       => '/etc/rc.d/rc.smsups-bridge',
 ];
 
 function runrc($rc, $cmd) {
     return trim(shell_exec("$rc $cmd 2>&1"));
+}
+
+function read_cfg($cfg_file) {
+    return file_exists($cfg_file) ? file($cfg_file, FILE_IGNORE_NEW_LINES) : [];
+}
+
+function write_cfg($cfg_file, $flash_dir, $lines) {
+    if (!is_dir($flash_dir)) mkdir($flash_dir, 0755, true);
+    file_put_contents($cfg_file, implode("\n", $lines) . "\n");
+}
+
+function set_cfg_key($cfg_file, $flash_dir, $key, $value) {
+    $lines = read_cfg($cfg_file);
+    $found = false;
+    foreach ($lines as &$line) {
+        if (strpos($line, "$key=") === 0) {
+            $line  = "$key=$value";
+            $found = true;
+        }
+    }
+    if (!$found) $lines[] = "$key=$value";
+    write_cfg($cfg_file, $flash_dir, $lines);
 }
 
 switch ($action) {
@@ -33,20 +58,29 @@ switch ($action) {
 
     case 'start_all':
         echo runrc($rc['ups-metrics'], 'start') . "\n";
-        echo runrc($rc['bridge'], 'start');
+        echo runrc($rc['bridge'],      'start');
         break;
 
     case 'stop_all':
         echo runrc($rc['ups-metrics'], 'stop') . "\n";
-        echo runrc($rc['bridge'], 'stop');
+        echo runrc($rc['bridge'],      'stop');
         break;
 
     case 'restart_all':
         echo runrc($rc['ups-metrics'], 'restart') . "\n";
-        echo runrc($rc['bridge'], 'restart');
+        echo runrc($rc['bridge'],      'restart');
         break;
 
     case 'save':
+        if ($service === 'logrotate') {
+            if (!is_dir(dirname($logrotate_cfg))) {
+                mkdir(dirname($logrotate_cfg), 0755, true);
+            }
+            file_put_contents($logrotate_cfg, $_POST['config'] ?? '');
+            copy($logrotate_cfg, $logrotate_etc);
+            echo "Logrotate config saved and applied.";
+            break;
+        }
         $cfg_path = ($service === 'bridge') ? $bridge_cfg : $ups_cfg;
         if (!is_dir(dirname($cfg_path))) {
             mkdir(dirname($cfg_path), 0755, true);
@@ -59,19 +93,13 @@ switch ($action) {
 
     case 'set_autostart':
         $enabled = ($_REQUEST['enabled'] ?? 'no') === 'yes' ? 'yes' : 'no';
-        $key = ($service === 'bridge') ? 'BRIDGE_ENABLED' : 'UPS_METRICS_ENABLED';
-
-        $lines = file_exists($cfg_file) ? file($cfg_file, FILE_IGNORE_NEW_LINES) : [];
-        $found = false;
-        foreach ($lines as &$line) {
-            if (strpos($line, "$key=") === 0) {
-                $line = "$key=$enabled";
-                $found = true;
-            }
-        }
-        if (!$found) $lines[] = "$key=$enabled";
-        if (!is_dir($flash_dir)) mkdir($flash_dir, 0755, true);
-        file_put_contents($cfg_file, implode("\n", $lines) . "\n");
+        $key_map = [
+            'bridge'      => 'BRIDGE_ENABLED',
+            'ups-metrics' => 'UPS_METRICS_ENABLED',
+        ];
+        $key = $key_map[$service] ?? null;
+        if (!$key) { echo "unknown service"; break; }
+        set_cfg_key($cfg_file, $flash_dir, $key, $enabled);
         echo "Auto-start for $service set to $enabled";
         break;
 

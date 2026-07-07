@@ -4,15 +4,15 @@
 <!ENTITY name         "smsups">
 <!ENTITY author       "FZero7">
 <!ENTITY repo         "unraid-smsups">
-<!ENTITY tag          "1.0.7">
+<!ENTITY tag          "1.0.8">
 <!ENTITY launch       "Settings/SMSUps">
 <!ENTITY icon         "fa-battery-full">
 <!ENTITY min          "6.12.0">
 <!ENTITY github       "https://github.com">
 <!ENTITY pluginURL    "&github;/&author;/&repo;/releases/download/&tag;/&name;.plg">
 <!ENTITY packageURL   "&github;/&author;/&repo;/releases/download/&tag;/&name;.txz">
-<!ENTITY MD5          "1f831a391fef6943d3da09bbba915e12">
-<!ENTITY version      "2026.07.07.0403">
+<!ENTITY MD5          "1a092401b34d5e382db54ed4441e17f2">
+<!ENTITY version      "2026.07.07.0427">
 ]>
 
 <PLUGIN name="&name;" author="&author;" repo="&repo;" tag="&tag;" launch="&launch;" icon="&icon;" min="&min;" github="&github;" pluginURL="&pluginURL;" packageURL="&packageURL;" MD5="&MD5;" version="&version;">
@@ -173,6 +173,8 @@ $flash_dir = "/boot/config/plugins/$plugin";
 $cfg_file  = "$flash_dir/smsups.cfg";
 $ups_cfg   = "$flash_dir/conf/config.yaml";
 $bridge_cfg= "$flash_dir/conf/bridge.yaml";
+$logrotate_cfg = "$flash_dir/conf/logrotate.conf";
+$logrotate_etc = "/etc/logrotate.d/$plugin";
 
 $ups_enabled    = false;
 $bridge_enabled = false;
@@ -185,6 +187,8 @@ if (file_exists($cfg_file)) {
 
 $ups_config_content    = file_exists($ups_cfg)    ? htmlspecialchars(file_get_contents($ups_cfg))    : "";
 $bridge_config_content = file_exists($bridge_cfg) ? htmlspecialchars(file_get_contents($bridge_cfg)) : "";
+$logrotate_src = file_exists($logrotate_cfg) ? $logrotate_cfg : $logrotate_etc;
+$logrotate_content = file_exists($logrotate_src) ? htmlspecialchars(file_get_contents($logrotate_src)) : "";
 ?>
 
 <style>
@@ -253,6 +257,7 @@ $bridge_config_content = file_exists($bridge_cfg) ? htmlspecialchars(file_get_co
     <div>
         <button class="tab-btn active" onclick="switchTab('tab-ups', this)">ups-metrics</button>
         <button class="tab-btn" onclick="switchTab('tab-bridge', this)">NUT Bridge</button>
+        <button class="tab-btn" onclick="switchTab('tab-logrotate', this)">Log Rotation</button>
     </div>
 
     <div id="tab-ups" class="tab-content active">
@@ -272,6 +277,14 @@ $bridge_config_content = file_exists($bridge_cfg) ? htmlspecialchars(file_get_co
             <button class="smsups-btn" onclick="svcAction('bridge', 'start')">&#9654; Start</button>
             <button class="smsups-btn danger" onclick="svcAction('bridge', 'stop')">&#9632; Stop</button>
             <button class="smsups-btn" onclick="svcAction('bridge', 'restart')">&#8635; Restart</button>
+        </div>
+    </div>
+
+    <div id="tab-logrotate" class="tab-content">
+        <p>Rotation rules for <code>/var/log/ups-metrics.log</code> and <code>/var/log/smsups-bridge.log</code> (applied to <code>/etc/logrotate.d/smsups</code>, run daily by cron).</p>
+        <textarea id="cfg-logrotate" class="smsups-textarea" spellcheck="false"><?= $logrotate_content ?></textarea>
+        <div>
+            <button class="smsups-btn" onclick="saveConfig('logrotate', 'cfg-logrotate')">&#128190; Save &amp; Apply</button>
         </div>
     </div>
 
@@ -338,6 +351,8 @@ $flash_dir = "/boot/config/plugins/$plugin";
 $cfg_file  = "$flash_dir/smsups.cfg";
 $ups_cfg   = "$flash_dir/conf/config.yaml";
 $bridge_cfg= "$flash_dir/conf/bridge.yaml";
+$logrotate_cfg = "$flash_dir/conf/logrotate.conf";
+$logrotate_etc = "/etc/logrotate.d/$plugin";
 
 $action  = $_REQUEST['action']  ?? '';
 $service = $_REQUEST['service'] ?? '';
@@ -403,6 +418,15 @@ switch ($action) {
         break;
 
     case 'save':
+        if ($service === 'logrotate') {
+            if (!is_dir(dirname($logrotate_cfg))) {
+                mkdir(dirname($logrotate_cfg), 0755, true);
+            }
+            file_put_contents($logrotate_cfg, $_POST['config'] ?? '');
+            copy($logrotate_cfg, $logrotate_etc);
+            echo "Logrotate config saved and applied.";
+            break;
+        }
         $cfg_path = ($service === 'bridge') ? $bridge_cfg : $ups_cfg;
         if (!is_dir(dirname($cfg_path))) {
             mkdir(dirname($cfg_path), 0755, true);
@@ -548,6 +572,14 @@ fi
 if [ ! -f "$FLASH_DIR/conf/bridge.yaml" ]; then
     cp "$EMHTTP/default_bridge.yaml" "$FLASH_DIR/conf/bridge.yaml"
     echo "Default bridge config installed"
+fi
+
+if [ -f "$FLASH_DIR/conf/logrotate.conf" ]; then
+    cp "$FLASH_DIR/conf/logrotate.conf" "/etc/logrotate.d/$PLUGIN"
+    echo "Custom logrotate config applied"
+else
+    cp "/etc/logrotate.d/$PLUGIN" "$FLASH_DIR/conf/logrotate.conf"
+    echo "Default logrotate config saved to flash"
 fi
 
 if [ ! -f "$FLASH_DIR/smsups.cfg" ]; then
